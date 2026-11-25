@@ -1,0 +1,16 @@
+version: "1"
+goal: "Run pytest with JUnit XML output for CI/agent reporting"
+language_profile: python
+tasks:
+  - id: pytest-junit
+    title: "Run tests and verify JUnit XML report"
+    scope:
+      allow: ["src/**/*.py", "tests/**/*.py", "build/junit.xml"]
+    budget:
+      steps: 10
+      minutes: 15
+    checks:
+      - type: test_suite
+        command: "pytest --junitxml=build/junit.xml"
+        parser: junit_xml
+        report_file: "build/junit.xml"

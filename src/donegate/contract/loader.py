@@ -78,5 +78,13 @@ def export_contract_schema() -> dict[str, Any]:
     """Export versioned JSON Schema for the DoneGate Contract."""
     schema = Contract.model_json_schema()
     schema["$schema"] = "https://json-schema.org/draft/2020-12/schema"
+    schema["$id"] = (
+        f"https://github.com/sagar04-cloud/CI-for-AI-agents/schemas/done.v{SCHEMA_VERSION}.schema.json"
+    )
+    schema["title"] = "DoneGate Contract (done.yaml)"
+    schema["description"] = (
+        "Executable contract for AI coding agents: ordered tasks, allowed file scope, "
+        "resource budgets, and objective verification checks."
+    )
     schema["x-donegate-schema-version"] = SCHEMA_VERSION
     return schema

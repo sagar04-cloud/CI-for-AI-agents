@@ -1,0 +1,23 @@
+name: cpp
+display_name: C / C++ (CMake / CTest)
+detection_files:
+  - CMakeLists.txt
+default_test_command: ctest --output-on-failure
+test_parser: generic
+lint_command: clang-tidy src/*.cpp
+build_command: cmake --build build
+typecheck_command: cmake --build build
+default_scope:
+  source:
+    - "src/**/*.{c,cc,cpp,h,hpp}"
+    - "include/**/*.{h,hpp}"
+    - "CMakeLists.txt"
+  tests:
+    - "tests/**/*.{c,cc,cpp}"
+  ignore:
+    - "build/**"
+    - "cmake-build-*/**"
+lockfiles: []
+tool_binaries:
+  - cmake
+  - ctest

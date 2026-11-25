@@ -12,7 +12,17 @@ from pydantic import BaseModel, Field
 from donegate import __version__
 from donegate.contract.loader import atomic_write_text
 
-SUPPORTED_INTEGRATIONS = ("claude_code", "cursor", "git", "generic", "mcp")
+SUPPORTED_INTEGRATIONS = (
+    "claude_code",
+    "cursor",
+    "git",
+    "generic",
+    "mcp",
+    "aider",
+    "openhands",
+    "windsurf",
+    "continue",
+)
 
 _TESTED_VERSIONS = {
     "claude_code": "Claude Code >=1.0 (Stop hook spec)",
@@ -20,6 +30,10 @@ _TESTED_VERSIONS = {
     "git": "Git >=2.30 (pre-commit hook)",
     "generic": f"DoneGate v{__version__}",
     "mcp": "MCP 2024-11-05 (JSON-RPC 2.0 stdio)",
+    "aider": "Aider >=0.50 (.aider.conf.yml)",
+    "openhands": "OpenHands >=0.14 (.openhands/microagents)",
+    "windsurf": "Windsurf >=1.0 (.windsurfrules)",
+    "continue": "Continue.dev >=1.0 (.continue/rules)",
 }
 
 
@@ -62,13 +76,21 @@ def _integrate_claude_code(repo_root: Path) -> IntegrationResult:
     hooks = settings.get("hooks")
     if not isinstance(hooks, dict):
         hooks = {}
+    stop_cmd = (
+        'python -c "import json,subprocess,sys; '
+        "r=subprocess.run(['donegate','status','--json'],capture_output=True,text=True); "
+        "d=json.loads(r.stdout) if r.returncode==0 and r.stdout.strip() else {}; "
+        "ids=[k for k,v in d.get('tasks',{}).items() if v.get('status')=='in_progress']; "
+        "codes=[subprocess.run(['donegate','check',i]).returncode for i in ids]; "
+        "sys.exit(max(codes, default=0))\""
+    )
     hooks["Stop"] = [
         {
             "matcher": "",
             "hooks": [
                 {
                     "type": "command",
-                    "command": "donegate status --json",
+                    "command": stop_cmd,
                 }
             ],
         }
@@ -176,19 +198,100 @@ def _integrate_mcp(repo_root: Path) -> IntegrationResult:
     )
 
 
+def _integrate_aider(repo_root: Path) -> IntegrationResult:
+    prompt_path = repo_root / "DONEGATE_AIDER.md"
+    atomic_write_text(
+        prompt_path,
+        f"# DoneGate Aider Instructions ({_TESTED_VERSIONS['aider']})\n\n"
+        "- Run `donegate next --json` and `donegate start <id>` before editing.\n"
+        "- Stay within `scope.allow` globs.\n"
+        "- Run `donegate check <id>` before finishing.\n",
+    )
+    conf_path = repo_root / ".aider.conf.yml"
+    atomic_write_text(
+        conf_path,
+        "# DoneGate Aider configuration\n"
+        "read: DONEGATE_AIDER.md\n"
+        "test-cmd: donegate check\n"
+        "auto-test: false\n",
+    )
+    return IntegrationResult(
+        name="aider",
+        tested_against=_TESTED_VERSIONS["aider"],
+        files_written=[".aider.conf.yml", "DONEGATE_AIDER.md"],
+        notes="Configured Aider conventions and DONEGATE_AIDER.md.",
+    )
+
+
+def _integrate_openhands(repo_root: Path) -> IntegrationResult:
+    micro_path = repo_root / ".openhands" / "microagents" / "donegate.md"
+    atomic_write_text(
+        micro_path,
+        "---\n"
+        "name: donegate\n"
+        "type: repo\n"
+        "---\n\n"
+        f"# DoneGate Microagent ({_TESTED_VERSIONS['openhands']})\n\n"
+        "Always run `donegate start <id>` before editing and `donegate check <id>` "
+        "before declaring completion.\n",
+    )
+    return IntegrationResult(
+        name="openhands",
+        tested_against=_TESTED_VERSIONS["openhands"],
+        files_written=[".openhands/microagents/donegate.md"],
+        notes="Created OpenHands repository microagent.",
+    )
+
+
+def _integrate_windsurf(repo_root: Path) -> IntegrationResult:
+    rules_path = repo_root / ".windsurfrules"
+    atomic_write_text(
+        rules_path,
+        f"# DoneGate Rules ({_TESTED_VERSIONS['windsurf']})\n\n"
+        "1. Run `donegate next` and `donegate start <id>`.\n"
+        "2. Edit only files allowed by the active task's `scope.allow`.\n"
+        "3. Do not say 'done' until `donegate check <id>` exits 0.\n",
+    )
+    return IntegrationResult(
+        name="windsurf",
+        tested_against=_TESTED_VERSIONS["windsurf"],
+        files_written=[".windsurfrules"],
+        notes="Created .windsurfrules for Windsurf.",
+    )
+
+
+def _integrate_continue(repo_root: Path) -> IntegrationResult:
+    rule_path = repo_root / ".continue" / "rules" / "donegate.md"
+    atomic_write_text(
+        rule_path,
+        f"# DoneGate Rules ({_TESTED_VERSIONS['continue']})\n\n"
+        "- Use `donegate next`, `donegate start <id>`, and `donegate check <id>`.\n"
+        "- Never touch files outside `scope.allow`.\n",
+    )
+    return IntegrationResult(
+        name="continue",
+        tested_against=_TESTED_VERSIONS["continue"],
+        files_written=[".continue/rules/donegate.md"],
+        notes="Created Continue.dev rule file.",
+    )
+
+
 def apply_integration(repo_root: Path, name: str) -> IntegrationResult:
     """Generate integration files for the requested tool."""
+    handlers = {
+        "claude_code": _integrate_claude_code,
+        "cursor": _integrate_cursor,
+        "git": _integrate_git,
+        "generic": _integrate_generic,
+        "mcp": _integrate_mcp,
+        "aider": _integrate_aider,
+        "openhands": _integrate_openhands,
+        "windsurf": _integrate_windsurf,
+        "continue": _integrate_continue,
+    }
     key = name.lower()
-    if key == "claude_code":
-        return _integrate_claude_code(repo_root)
-    if key == "cursor":
-        return _integrate_cursor(repo_root)
-    if key == "git":
-        return _integrate_git(repo_root)
-    if key == "generic":
-        return _integrate_generic(repo_root)
-    if key == "mcp":
-        return _integrate_mcp(repo_root)
+    if key in handlers:
+        return handlers[key](repo_root)
     raise KeyError(
         f"Unknown integration {name!r}. Supported: {', '.join(SUPPORTED_INTEGRATIONS)}"
     )

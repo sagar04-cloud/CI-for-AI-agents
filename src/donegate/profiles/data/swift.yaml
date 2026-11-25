@@ -1,0 +1,21 @@
+name: swift
+display_name: Swift (SwiftPM)
+detection_files:
+  - Package.swift
+default_test_command: swift test
+test_parser: generic
+lint_command: swiftlint
+build_command: swift build
+typecheck_command: swift build
+default_scope:
+  source:
+    - "Sources/**/*.swift"
+    - "Package.swift"
+  tests:
+    - "Tests/**/*.swift"
+  ignore:
+    - ".build/**"
+lockfiles:
+  - Package.resolved
+tool_binaries:
+  - swift
