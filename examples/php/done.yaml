@@ -1,0 +1,16 @@
+version: "1"
+goal: "Sanitize query parameter in PHP service"
+language_profile: php
+tasks:
+  - id: sanitize-query
+    title: "Escape query param and run PHPUnit"
+    scope:
+      allow: ["src/**/*.php", "tests/**/*.php"]
+    budget:
+      steps: 10
+      minutes: 15
+    checks:
+      - type: test_suite
+        command: "vendor/bin/phpunit --log-junit build/junit.xml"
+        parser: junit_xml
+        report_file: "build/junit.xml"

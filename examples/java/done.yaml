@@ -1,0 +1,16 @@
+version: "1"
+goal: "Add input validation in Java Maven service"
+language_profile: java
+tasks:
+  - id: validate-input
+    title: "Validate request payload and run JUnit"
+    scope:
+      allow: ["src/main/**/*", "src/test/**/*"]
+    budget:
+      steps: 15
+      minutes: 25
+    checks:
+      - type: test_suite
+        command: "mvn test"
+        parser: junit_xml
+        report_file: "target/surefire-reports/TEST-AppTest.xml"

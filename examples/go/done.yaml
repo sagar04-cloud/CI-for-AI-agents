@@ -1,0 +1,17 @@
+version: "1"
+goal: "Fix health endpoint in Go service"
+language_profile: go
+tasks:
+  - id: fix-health
+    title: "Return 200 OK from /healthz"
+    scope:
+      allow: ["**/*.go"]
+    budget:
+      steps: 10
+      minutes: 15
+    checks:
+      - type: test_suite
+        command: "go test -json ./..."
+        parser: go_test
+      - type: lint_clean
+        command: "go vet ./..."

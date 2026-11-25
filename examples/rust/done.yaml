@@ -1,0 +1,17 @@
+version: "1"
+goal: "Prevent integer underflow in Rust crate"
+language_profile: rust
+tasks:
+  - id: fix-underflow
+    title: "Use saturating arithmetic in counter"
+    scope:
+      allow: ["src/**/*.rs", "tests/**/*.rs"]
+    budget:
+      steps: 10
+      minutes: 15
+    checks:
+      - type: test_suite
+        command: "cargo test"
+        parser: cargo_test
+      - type: lint_clean
+        command: "cargo clippy -- -D warnings"

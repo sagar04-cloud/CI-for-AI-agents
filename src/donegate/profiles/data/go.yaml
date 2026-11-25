@@ -1,0 +1,23 @@
+name: go
+display_name: Go
+detection_files:
+  - go.mod
+default_test_command: go test -json ./...
+test_parser: go_test
+lint_command: go vet ./...
+build_command: go build ./...
+typecheck_command: go vet ./...
+default_scope:
+  source:
+    - "**/*.go"
+    - "go.mod"
+  tests:
+    - "**/*_test.go"
+  ignore:
+    - "vendor/**"
+    - "bin/**"
+    - "dist/**"
+lockfiles:
+  - go.sum
+tool_binaries:
+  - go

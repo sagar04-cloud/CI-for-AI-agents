@@ -1,0 +1,27 @@
+name: dotnet
+display_name: C# / .NET
+detection_files:
+  - "*.csproj"
+  - "*.fsproj"
+  - "*.sln"
+default_test_command: dotnet test --logger "junit;LogFilePath=TestResults/junit.xml"
+test_parser: junit_xml
+lint_command: dotnet format --verify-no-changes
+build_command: dotnet build --no-restore
+typecheck_command: dotnet build --no-restore
+default_scope:
+  source:
+    - "**/*.cs"
+    - "**/*.fs"
+    - "*.csproj"
+  tests:
+    - "**/*Tests.cs"
+    - "**/*.Tests/**/*.cs"
+  ignore:
+    - "bin/**"
+    - "obj/**"
+    - "TestResults/**"
+lockfiles:
+  - packages.lock.json
+tool_binaries:
+  - dotnet

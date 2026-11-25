@@ -1,0 +1,25 @@
+name: ruby
+display_name: Ruby
+detection_files:
+  - Gemfile
+default_test_command: bundle exec rspec
+test_parser: generic
+lint_command: bundle exec rubocop
+build_command: bundle check
+typecheck_command: bundle exec srb tc
+default_scope:
+  source:
+    - "lib/**/*.rb"
+    - "app/**/*.rb"
+  tests:
+    - "spec/**/*.rb"
+    - "test/**/*.rb"
+  ignore:
+    - "vendor/bundle/**"
+    - "tmp/**"
+    - "coverage/**"
+lockfiles:
+  - Gemfile.lock
+tool_binaries:
+  - ruby
+  - bundle

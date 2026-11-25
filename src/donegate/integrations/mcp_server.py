@@ -1,0 +1,122 @@
+"""Minimal zero-dependency MCP stdio server exposing next/start/check/status."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from pathlib import Path
+from typing import Any
+
+from donegate import __version__
+from donegate.supervisor import Supervisor
+
+_TOOLS = [
+    {
+        "name": "donegate_next",
+        "description": "List runnable DoneGate tasks ordered by priority.",
+        "inputSchema": {"type": "object", "properties": {}, "required": []},
+    },
+    {
+        "name": "donegate_start",
+        "description": "Start a DoneGate task (snapshots git baseline and timer).",
+        "inputSchema": {
+            "type": "object",
+            "properties": {"task_id": {"type": "string"}},
+            "required": ["task_id"],
+        },
+    },
+    {
+        "name": "donegate_check",
+        "description": "Run checks, scope guard, and budget checks on a task.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {"task_id": {"type": "string"}},
+            "required": ["task_id"],
+        },
+    },
+    {
+        "name": "donegate_status",
+        "description": "Return current DoneGate contract run state.",
+        "inputSchema": {"type": "object", "properties": {}, "required": []},
+    },
+]
+
+
+def handle_mcp_request(req: dict[str, Any], repo_root: Path) -> dict[str, Any] | None:
+    """Handle a single JSON-RPC 2.0 MCP request."""
+    req_id = req.get("id")
+    method = req.get("method", "")
+    params = req.get("params") or {}
+
+    if method == "notifications/initialized":
+        return None
+
+    if method == "initialize":
+        return {
+            "jsonrpc": "2.0",
+            "id": req_id,
+            "result": {
+                "protocolVersion": "2024-11-05",
+                "capabilities": {"tools": {}},
+                "serverInfo": {"name": "donegate-mcp", "version": __version__},
+            },
+        }
+
+    if method == "tools/list":
+        return {"jsonrpc": "2.0", "id": req_id, "result": {"tools": _TOOLS}}
+
+    if method == "tools/call":
+        tool_name = params.get("name", "")
+        args = params.get("arguments") or {}
+        sup = Supervisor(repo_root)
+        payload: Any
+        if tool_name == "donegate_next":
+            payload = [t.model_dump(mode="json") for t in sup.next_tasks()]
+        elif tool_name == "donegate_start":
+            rt = sup.start(str(args["task_id"]))
+            payload = rt.model_dump(mode="json")
+        elif tool_name == "donegate_check":
+            outcome = sup.check(str(args["task_id"]))
+            payload = outcome.model_dump(mode="json")
+        elif tool_name == "donegate_status":
+            payload = sup.state.model_dump(mode="json")
+        else:
+            return {
+                "jsonrpc": "2.0",
+                "id": req_id,
+                "error": {"code": -32601, "message": f"Unknown tool: {tool_name}"},
+            }
+        return {
+            "jsonrpc": "2.0",
+            "id": req_id,
+            "result": {
+                "content": [{"type": "text", "text": json.dumps(payload, indent=2)}],
+            },
+        }
+
+    return {
+        "jsonrpc": "2.0",
+        "id": req_id,
+        "error": {"code": -32601, "message": f"Method not found: {method}"},
+    }
+
+
+def run_mcp_stdio(repo_root: Path) -> None:
+    """Run the MCP JSON-RPC 2.0 server over stdin/stdout."""
+    for raw in sys.stdin:
+        line = raw.strip()
+        if not line:
+            continue
+        req = json.loads(line)
+        resp = handle_mcp_request(req, repo_root)
+        if resp is not None:
+            sys.stdout.write(json.dumps(resp) + "\n")
+            sys.stdout.flush()
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="DoneGate MCP stdio server")
+    parser.add_argument("--repo", default=".", help="Repository root path")
+    ns = parser.parse_args()
+    run_mcp_stdio(Path(ns.repo).resolve())

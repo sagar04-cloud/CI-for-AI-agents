@@ -1,0 +1,25 @@
+name: java
+display_name: Java / Kotlin (Maven / Gradle)
+detection_files:
+  - pom.xml
+  - build.gradle
+  - build.gradle.kts
+default_test_command: mvn test
+test_parser: junit_xml
+lint_command: mvn checkstyle:check
+build_command: mvn package -DskipTests
+typecheck_command: mvn test-compile
+default_scope:
+  source:
+    - "src/main/**/*"
+  tests:
+    - "src/test/**/*"
+  ignore:
+    - "target/**"
+    - "build/**"
+    - ".gradle/**"
+lockfiles:
+  - gradle.lockfile
+tool_binaries:
+  - java
+  - mvn

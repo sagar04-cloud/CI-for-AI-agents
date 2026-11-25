@@ -1,0 +1,17 @@
+version: "1"
+goal: "Fix session expiry in Ruby app"
+language_profile: ruby
+tasks:
+  - id: fix-session
+    title: "Expire stale sessions after 24h"
+    scope:
+      allow: ["lib/**/*.rb", "spec/**/*.rb"]
+    budget:
+      steps: 10
+      minutes: 15
+    checks:
+      - type: test_suite
+        command: "bundle exec rspec"
+        parser: generic
+      - type: lint_clean
+        command: "bundle exec rubocop"

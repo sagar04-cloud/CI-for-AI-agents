@@ -1,0 +1,16 @@
+version: "1"
+goal: "Fix invoice rounding in .NET service"
+language_profile: dotnet
+tasks:
+  - id: fix-rounding
+    title: "Round totals to 2 decimal places"
+    scope:
+      allow: ["**/*.cs"]
+    budget:
+      steps: 12
+      minutes: 20
+    checks:
+      - type: test_suite
+        command: "dotnet test --logger \"junit;LogFilePath=TestResults/junit.xml\""
+        parser: junit_xml
+        report_file: "TestResults/junit.xml"

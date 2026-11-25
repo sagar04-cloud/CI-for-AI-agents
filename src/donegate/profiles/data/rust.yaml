@@ -1,0 +1,22 @@
+name: rust
+display_name: Rust
+detection_files:
+  - Cargo.toml
+default_test_command: cargo test
+test_parser: cargo_test
+lint_command: cargo clippy -- -D warnings
+build_command: cargo build
+typecheck_command: cargo check
+default_scope:
+  source:
+    - "src/**/*.rs"
+    - "Cargo.toml"
+  tests:
+    - "tests/**/*.rs"
+  ignore:
+    - "target/**"
+lockfiles:
+  - Cargo.lock
+tool_binaries:
+  - cargo
+  - rustc

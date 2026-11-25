@@ -1,0 +1,22 @@
+name: php
+display_name: PHP
+detection_files:
+  - composer.json
+default_test_command: vendor/bin/phpunit
+test_parser: junit_xml
+lint_command: vendor/bin/phpstan analyse
+build_command: composer validate
+typecheck_command: vendor/bin/phpstan analyse
+default_scope:
+  source:
+    - "src/**/*.php"
+    - "app/**/*.php"
+  tests:
+    - "tests/**/*.php"
+  ignore:
+    - "vendor/**"
+lockfiles:
+  - composer.lock
+tool_binaries:
+  - php
+  - composer

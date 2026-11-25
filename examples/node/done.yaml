@@ -1,0 +1,17 @@
+version: "1"
+goal: "Add rate limiter middleware in Node/TypeScript"
+language_profile: node
+tasks:
+  - id: add-rate-limit
+    title: "Implement rate limiter and unit tests"
+    scope:
+      allow: ["src/**/*.{ts,js}", "tests/**/*.{ts,js}"]
+    budget:
+      steps: 12
+      minutes: 20
+    checks:
+      - type: test_suite
+        command: "npm test"
+        parser: jest
+      - type: lint_clean
+        command: "npm run lint"

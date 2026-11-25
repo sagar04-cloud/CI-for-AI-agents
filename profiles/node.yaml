@@ -1,0 +1,30 @@
+name: node
+display_name: Node.js (JavaScript / TypeScript)
+detection_files:
+  - package.json
+default_test_command: npm test
+test_parser: jest
+lint_command: npm run lint
+build_command: npm run build
+typecheck_command: npx tsc --noEmit
+default_scope:
+  source:
+    - "src/**/*.{js,jsx,ts,tsx,mjs,cjs}"
+  tests:
+    - "tests/**/*.{js,jsx,ts,tsx}"
+    - "**/*.test.{js,jsx,ts,tsx}"
+    - "**/*.spec.{js,jsx,ts,tsx}"
+  ignore:
+    - "node_modules/**"
+    - "dist/**"
+    - "build/**"
+    - ".next/**"
+    - "coverage/**"
+lockfiles:
+  - package-lock.json
+  - yarn.lock
+  - pnpm-lock.yaml
+  - bun.lockb
+tool_binaries:
+  - node
+  - npm

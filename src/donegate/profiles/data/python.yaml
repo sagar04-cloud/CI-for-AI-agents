@@ -1,0 +1,36 @@
+name: python
+display_name: Python
+detection_files:
+  - pyproject.toml
+  - setup.py
+  - setup.cfg
+  - requirements.txt
+default_test_command: pytest
+test_parser: pytest
+lint_command: ruff check .
+build_command: python -m build
+typecheck_command: mypy src
+default_scope:
+  source:
+    - "src/**/*.py"
+    - "*.py"
+  tests:
+    - "tests/**/*.py"
+  ignore:
+    - ".venv/**"
+    - "venv/**"
+    - "**/__pycache__/**"
+    - "**/*.pyc"
+    - "*.egg-info/**"
+    - "dist/**"
+    - "build/**"
+    - "**/.pytest_cache/**"
+    - "**/.mypy_cache/**"
+    - "**/.ruff_cache/**"
+lockfiles:
+  - poetry.lock
+  - uv.lock
+  - Pipfile.lock
+tool_binaries:
+  - python
+  - pytest

@@ -1,0 +1,18 @@
+version: "1"
+goal: "Fix auth bug and keep Python lint clean"
+language_profile: python
+tasks:
+  - id: fix-auth
+    title: "Fix token validation"
+    scope:
+      allow: ["src/**/*.py", "tests/**/*.py"]
+      deny: ["src/billing/**"]
+    budget:
+      steps: 10
+      minutes: 15
+    checks:
+      - type: test_suite
+        command: "pytest"
+        parser: pytest
+      - type: lint_clean
+        command: "ruff check src tests"
