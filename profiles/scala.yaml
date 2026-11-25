@@ -1,0 +1,21 @@
+name: scala
+display_name: Scala (sbt)
+detection_files:
+  - build.sbt
+default_test_command: sbt test
+test_parser: junit_xml
+lint_command: sbt scalafmtCheckAll
+build_command: sbt compile
+typecheck_command: sbt compile
+default_scope:
+  source:
+    - "src/main/scala/**/*.scala"
+    - "build.sbt"
+  tests:
+    - "src/test/scala/**/*.scala"
+  ignore:
+    - "target/**"
+    - "project/target/**"
+lockfiles: []
+tool_binaries:
+  - sbt

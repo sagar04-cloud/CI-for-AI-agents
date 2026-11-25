@@ -1,0 +1,22 @@
+name: zig
+display_name: Zig
+detection_files:
+  - build.zig
+default_test_command: zig build test
+test_parser: generic
+lint_command: zig fmt --check .
+build_command: zig build
+typecheck_command: zig build
+default_scope:
+  source:
+    - "src/**/*.zig"
+    - "build.zig"
+  tests:
+    - "src/**/*.zig"
+    - "tests/**/*.zig"
+  ignore:
+    - "zig-out/**"
+    - ".zig-cache/**"
+lockfiles: []
+tool_binaries:
+  - zig

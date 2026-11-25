@@ -1,0 +1,48 @@
+name: DoneGate PR Contract Check
+description: Validate done.yaml and run DoneGate checks on Pull Requests.
+branding:
+  icon: shield
+  color: blue
+
+inputs:
+  contract-file:
+    description: Path to done.yaml contract
+    required: false
+    default: done.yaml
+  task-id:
+    description: Specific task ID to check (optional; checks all runnable tasks if omitted)
+    required: false
+    default: ""
+  python-version:
+    description: Python version to install DoneGate on
+    required: false
+    default: "3.12"
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - name: Install DoneGate
+      shell: bash
+      run: pip install donegate
+
+    - name: Validate contract
+      shell: bash
+      run: donegate validate --file "${{ inputs.contract-file }}"
+
+    - name: Run DoneGate checks
+      shell: bash
+      run: |
+        if [ -n "${{ inputs.task-id }}" ]; then
+          donegate start "${{ inputs.task-id }}" --file "${{ inputs.contract-file }}"
+          donegate check "${{ inputs.task-id }}" --file "${{ inputs.contract-file }}"
+        else
+          for id in $(donegate next --file "${{ inputs.contract-file }}" --json | python -c "import json,sys; print(' '.join(t['id'] for t in json.load(sys.stdin)))"); do
+            donegate start "$id" --file "${{ inputs.contract-file }}"
+            donegate check "$id" --file "${{ inputs.contract-file }}"
+          done
+        fi

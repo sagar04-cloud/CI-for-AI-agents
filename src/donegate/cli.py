@@ -22,8 +22,11 @@ from donegate.contract import (
     load_contract,
 )
 from donegate.integrations import SUPPORTED_INTEGRATIONS, apply_integration
+from donegate.planner import draft_contract
 from donegate.profiles import detect_profiles, generate_contract
 from donegate.supervisor import Supervisor, read_events
+from donegate.supervisor.otel import events_to_otlp_dict
+from donegate.ui import create_ui_server
 
 app = typer.Typer(
     name="donegate",
@@ -266,18 +269,59 @@ def log(
 @app.command()
 def export(
     schema: bool = typer.Option(False, "--schema", help="Export contract JSON Schema"),
+    otel: bool = typer.Option(False, "--otel", help="Export events.log as OpenTelemetry OTLP JSON"),
     file: ContractFileOpt = Path("done.yaml"),
     json_output: JsonOpt = False,
 ) -> None:
-    """Export versioned JSON Schema or contract summary."""
+    """Export versioned JSON Schema, OTLP traces, or contract summary."""
     if schema:
         _emit_json(export_contract_schema())
         return
+    if otel:
+        _emit_json(events_to_otlp_dict(Path.cwd()))
+        return
     contract = load_contract(file)
+    _emit_json(contract.to_yaml_dict())
+
+
+@app.command()
+def plan(
+    goal: str = typer.Argument(..., help="Natural-language goal to plan into done.yaml"),
+    file: ContractFileOpt = Path("done.yaml"),
+    force: bool = typer.Option(False, "--force", help="Overwrite existing done.yaml"),
+    json_output: JsonOpt = False,
+) -> None:
+    """Draft a done.yaml contract from a goal (heuristic or DONEGATE_PLANNER_CMD)."""
+    repo_root = Path.cwd()
+    target = file if file.is_absolute() else (repo_root / file)
+    if target.exists() and not force:
+        msg = f"{file} already exists (use --force to overwrite)"
+        if json_output:
+            _emit_json({"ok": False, "error": msg})
+        else:
+            console.print(f"[red]Error:[/red] {msg}")
+        raise typer.Exit(code=1)
+
+    contract = draft_contract(goal, repo_root)
+    dump_contract(contract, target)
     if json_output:
-        _emit_json(contract.to_yaml_dict())
+        _emit_json({"ok": True, "path": str(target), "tasks": [t.id for t in contract.tasks]})
     else:
-        _emit_json(contract.to_yaml_dict())
+        console.print(f"[green]Planned[/green] {len(contract.tasks)} task(s) -> {file}")
+
+
+@app.command()
+def ui(
+    host: str = typer.Option("127.0.0.1", "--host", help="Bind host"),
+    port: int = typer.Option(8765, "--port", help="Bind port"),
+) -> None:
+    """Launch the local DoneGate web dashboard."""
+    server = create_ui_server(Path.cwd(), host=host, port=port)
+    console.print(f"DoneGate UI running at http://{host}:{port} (Ctrl+C to stop)")
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        server.server_close()
 
 
 @app.command()
@@ -302,6 +346,24 @@ def integrate(
             f"[green]Integrated {res.name}[/green] ({res.tested_against}): "
             f"{', '.join(res.files_written)}"
         )
+
+
+def _tool_install_hint(tool: str) -> str:
+    if sys.platform.startswith("win"):
+        hints = {
+            "git": "winget install Git.Git (or: scoop install git / choco install git)",
+            "node": "winget install OpenJS.NodeJS.LTS (or: scoop install nodejs-lts)",
+            "npm": "winget install OpenJS.NodeJS.LTS (or: scoop install nodejs-lts)",
+            "go": "winget install GoLang.Go (or: scoop install go)",
+            "cargo": "winget install Rustlang.Rustup (or: scoop install rustup)",
+            "rustc": "winget install Rustlang.Rustup (or: scoop install rustup)",
+            "dotnet": "winget install Microsoft.DotNet.SDK.8",
+            "cmake": "winget install Kitware.CMake (or: scoop install cmake)",
+            "zig": "winget install zig.zig (or: scoop install zig)",
+        }
+        if tool in hints:
+            return f"Install '{tool}': {hints[tool]}"
+    return f"Install '{tool}' and ensure it is on PATH."
 
 
 @app.command()
@@ -333,7 +395,7 @@ def doctor(
                     "path": item.rel_path,
                     "tool": tool,
                     "available": found,
-                    "hint": "" if found else f"Install '{tool}' and ensure it is on PATH.",
+                    "hint": "" if found else _tool_install_hint(tool),
                 }
             )
 

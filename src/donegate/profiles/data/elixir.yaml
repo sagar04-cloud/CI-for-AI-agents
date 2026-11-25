@@ -1,0 +1,23 @@
+name: elixir
+display_name: Elixir (Mix)
+detection_files:
+  - mix.exs
+default_test_command: mix test
+test_parser: generic
+lint_command: mix credo --strict
+build_command: mix compile --warnings-as-errors
+typecheck_command: mix dialyzer
+default_scope:
+  source:
+    - "lib/**/*.ex"
+    - "mix.exs"
+  tests:
+    - "test/**/*.exs"
+  ignore:
+    - "_build/**"
+    - "deps/**"
+lockfiles:
+  - mix.lock
+tool_binaries:
+  - elixir
+  - mix
