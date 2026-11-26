@@ -156,3 +156,51 @@ def test_agent_skill_and_plugin_manifests(tmp_path: Path) -> None:
 
     res = apply_integration(tmp_path, "skill")
     assert (tmp_path / res.files_written[0]).is_file()
+
+
+def test_tool_install_hints_cross_platform(monkeypatch: pytest.MonkeyPatch) -> None:
+    from donegate.cli import _tool_install_hint
+
+    monkeypatch.setattr(sys, "platform", "win32")
+    assert "winget" in _tool_install_hint("git")
+    assert "PATH" in _tool_install_hint("custom_tool")
+
+    monkeypatch.setattr(sys, "platform", "linux")
+    assert "PATH" in _tool_install_hint("git")
+
+
+def test_check_all_failure_and_mcp_unknown_tool(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _git(tmp_path, "init")
+    _git(tmp_path, "config", "user.email", "t@e.com")
+    _git(tmp_path, "config", "user.name", "T")
+    (tmp_path / "done.yaml").write_text(
+        """
+goal: "Fail check --all"
+tasks:
+  - id: f1
+    title: "Missing file"
+    checks:
+      - type: file_exists
+        path: "does_not_exist.txt"
+""",
+        encoding="utf-8",
+    )
+    _git(tmp_path, "add", ".")
+    _git(tmp_path, "commit", "-m", "init")
+
+    monkeypatch.chdir(tmp_path)
+    assert runner.invoke(app, ["start", "f1"]).exit_code == 0
+    assert runner.invoke(app, ["check", "--all"]).exit_code == 1
+    assert runner.invoke(app, ["check", "--all", "--json"]).exit_code == 1
+
+    unk = handle_mcp_request(
+        {
+            "id": 99,
+            "method": "tools/call",
+            "params": {"name": "donegate_unknown", "arguments": {}},
+        },
+        tmp_path,
+    )
+    assert unk is not None and unk["error"]["code"] == -32601

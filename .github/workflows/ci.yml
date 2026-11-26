@@ -88,6 +88,7 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: "1.22"
+          cache: false
       - uses: dtolnay/rust-toolchain@stable
       - name: Install DoneGate
         run: |
