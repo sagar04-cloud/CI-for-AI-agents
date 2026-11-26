@@ -28,7 +28,7 @@ runs:
 
     - name: Install DoneGate
       shell: bash
-      run: pip install donegate
+      run: pip install donegate || pip install "git+https://github.com/sagar04-cloud/CI-for-AI-agents.git"
 
     - name: Validate contract
       shell: bash
