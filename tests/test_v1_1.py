@@ -138,9 +138,12 @@ def test_agent_skill_and_plugin_manifests(tmp_path: Path) -> None:
     from donegate.integrations import apply_integration
 
     root = Path(__file__).resolve().parents[1]
-    for skill_file in (root / "SKILL.md", root / "skills" / "donegate" / "SKILL.md"):
-        text = skill_file.read_text(encoding="utf-8")
-        assert text.startswith("---\nname: donegate\n")
+    skill_texts = [
+        p.read_text(encoding="utf-8")
+        for p in (root / "SKILL.md", root / "skills" / "donegate" / "SKILL.md")
+    ]
+    assert skill_texts[0] == skill_texts[1]
+    assert skill_texts[0].startswith("---\nname: donegate\n")
 
     plugin_json = json.loads((root / ".claude-plugin" / "plugin.json").read_text(encoding="utf-8"))
     assert plugin_json["name"] == "donegate"

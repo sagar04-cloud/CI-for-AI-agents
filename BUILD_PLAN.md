@@ -261,3 +261,9 @@ tasks:
       - type: command
         command: "mypy src"
 ```
+
+---
+
+## Release History
+- **v0.1.0** (`2026-11-25`): Phases 0–9 completed.
+- **v1.1.0** (`2026-11-26`): Added `check --all`, `reset`, `report`, `plan`, `ui`, OTLP export, 13 language profiles/examples, 10 agent integrations, `SKILL.md` / `.claude-plugin`, and live polyglot E2E CI.

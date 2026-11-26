@@ -142,6 +142,38 @@ def test_lint_clean_and_no_new_lint_errors(tmp_path: Path) -> None:
     ).passed
 
 
+def _git(repo: Path, *args: str) -> None:
+    import subprocess
+
+    subprocess.run(["git", *args], cwd=str(repo), check=True, capture_output=True)
+
+
+def test_no_new_lint_errors_diff_aware(tmp_path: Path) -> None:
+    _git(tmp_path, "init")
+    _git(tmp_path, "config", "user.email", "t@e.com")
+    _git(tmp_path, "config", "user.name", "T")
+    (tmp_path / "app.py").write_text("a = 1\nb = 2\n", encoding="utf-8")
+    _git(tmp_path, "add", ".")
+    _git(tmp_path, "commit", "-m", "init")
+
+    # Modify line 2 only; error on untouched line 1 should pass, error on line 2 should fail
+    (tmp_path / "app.py").write_text("a = 1\nb = 3\n", encoding="utf-8")
+    reg = get_check_registry()
+    ctx = CheckContext(repo_root=tmp_path)
+
+    untouched_err = (
+        f'"{sys.executable}" -c "import sys; print(\'app.py:1:1: E999 old\'); sys.exit(1)"'
+    )
+    assert reg.get("no_new_lint_errors").run(
+        CheckSpec(type="no_new_lint_errors", command=untouched_err, diff_aware=True), ctx
+    ).passed
+
+    new_err = f'"{sys.executable}" -c "import sys; print(\'app.py:2:1: E999 new\'); sys.exit(1)"'
+    assert not reg.get("no_new_lint_errors").run(
+        CheckSpec(type="no_new_lint_errors", command=new_err, diff_aware=True), ctx
+    ).passed
+
+
 def test_human_approval_and_llm_judge(tmp_path: Path) -> None:
     reg = get_check_registry()
     ctx_wait = CheckContext(repo_root=tmp_path, task_id="t1")

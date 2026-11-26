@@ -372,8 +372,36 @@ class LintCleanCheck:
         )
 
 
+def _changed_lines_by_file(repo_root: Path) -> dict[str, set[int]]:
+    """Return {posix_rel_path: set(1-based changed line numbers)} from git diff."""
+    proc = subprocess.run(
+        ["git", "diff", "-U0", "HEAD"],
+        cwd=str(repo_root),
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        check=False,
+    )
+    if proc.returncode != 0 or not proc.stdout:
+        return {}
+    changed: dict[str, set[int]] = {}
+    current_file: str | None = None
+    hunk_re = re.compile(r"^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@")
+    for line in proc.stdout.splitlines():
+        if line.startswith("+++ b/"):
+            current_file = line[6:].replace("\\", "/")
+            changed.setdefault(current_file, set())
+        elif current_file and (m := hunk_re.match(line)):
+            start = int(m.group(1))
+            count = int(m.group(2)) if m.group(2) is not None else 1
+            if count > 0:
+                changed[current_file].update(range(start, start + count))
+    return changed
+
+
 class NoNewLintErrorsCheck:
-    """Allow existing lint baseline errors but fail if error count increases."""
+    """Allow existing lint baseline errors; supports diff-line-aware mode and baselines."""
 
     check_type = "no_new_lint_errors"
 
@@ -385,6 +413,8 @@ class NoNewLintErrorsCheck:
                 message="no_new_lint_errors requires a 'command' field",
                 suggested_action="Provide the linter command.",
             )
+
+        diff_aware = bool(getattr(spec, "diff_aware", False))
         baseline = getattr(spec, "baseline_errors", None)
         if baseline is None:
             baseline_file = context.repo_root / ".donegate" / "lint_baseline.json"
@@ -398,6 +428,7 @@ class NoNewLintErrorsCheck:
         if baseline is None:
             baseline = context.lint_baselines.get(spec.display_name(), 0)
         baseline = int(baseline)
+
         code, stdout, stderr, timed_out = _run_shell(cmd, context.repo_root, spec.timeout_seconds)
         if timed_out:
             return CheckResult(
@@ -411,7 +442,35 @@ class NoNewLintErrorsCheck:
                 message="Zero lint errors",
                 evidence={"errors": 0, "baseline": baseline},
             )
+
         output_lines = [ln for ln in f"{stdout}\n{stderr}".splitlines() if ln.strip()]
+        if diff_aware:
+            changed_map = _changed_lines_by_file(context.repo_root)
+            loc_re = re.compile(r"^([^\s:]+):(\d+)(?::\d+)?:")
+            new_line_errors: list[str] = []
+            for ln in output_lines:
+                if m := loc_re.match(ln.strip()):
+                    fpath = m.group(1).replace("\\", "/").lstrip("./")
+                    lno = int(m.group(2))
+                    if lno in changed_map.get(fpath, set()):
+                        new_line_errors.append(ln)
+            passed = len(new_line_errors) == 0
+            return CheckResult(
+                passed=passed,
+                message=(
+                    "No lint errors on changed lines"
+                    if passed
+                    else f"{len(new_line_errors)} lint error(s) on changed lines"
+                ),
+                evidence={
+                    "mode": "diff_aware",
+                    "new_errors": len(new_line_errors),
+                    "total_errors": len(output_lines),
+                    "key_error_lines": new_line_errors[:6],
+                },
+                suggested_action="" if passed else "Fix lint errors on your modified lines.",
+            )
+
         error_count = len(output_lines)
         passed = error_count <= baseline
         return CheckResult(
