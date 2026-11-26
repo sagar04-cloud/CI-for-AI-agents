@@ -12,7 +12,7 @@ from donegate import __version__
 from donegate.contract import ContractValidationError, ScopeMode, load_contract
 from donegate.supervisor import Supervisor
 
-_TOOLS = [
+_TOOLS: list[dict[str, Any]] = [
     {
         "name": "donegate_next",
         "description": "List runnable DoneGate tasks ordered by priority.",
@@ -59,9 +59,10 @@ _TOOLS = [
 
 def handle_mcp_request(req: dict[str, Any], repo_root: Path) -> dict[str, Any] | None:
     """Handle a single JSON-RPC 2.0 MCP request."""
-    req_id = req.get("id")
-    method = req.get("method", "")
-    params = req.get("params") or {}
+    req_id: Any = req.get("id")
+    method = str(req.get("method", ""))
+    raw_params = req.get("params")
+    params: dict[str, Any] = raw_params if isinstance(raw_params, dict) else {}
 
     if method == "notifications/initialized":
         return None
@@ -81,8 +82,9 @@ def handle_mcp_request(req: dict[str, Any], repo_root: Path) -> dict[str, Any] |
         return {"jsonrpc": "2.0", "id": req_id, "result": {"tools": _TOOLS}}
 
     if method == "tools/call":
-        tool_name = params.get("name", "")
-        args = params.get("arguments") or {}
+        tool_name = str(params.get("name", ""))
+        raw_args = params.get("arguments")
+        args: dict[str, Any] = raw_args if isinstance(raw_args, dict) else {}
         payload: Any
         if tool_name == "donegate_validate":
             try:
@@ -99,7 +101,7 @@ def handle_mcp_request(req: dict[str, Any], repo_root: Path) -> dict[str, Any] |
                 payload = rt.model_dump(mode="json")
             elif tool_name == "donegate_check":
                 raw_mode = args.get("mode")
-                mode = ScopeMode(raw_mode) if raw_mode else None
+                mode = ScopeMode(str(raw_mode)) if raw_mode else None
                 outcome = sup.check(str(args["task_id"]), scope_mode=mode)
                 payload = outcome.model_dump(mode="json")
             elif tool_name == "donegate_status":
@@ -133,7 +135,7 @@ def run_mcp_stdio(repo_root: Path) -> None:
         line = raw.strip()
         if not line:
             continue
-        req = json.loads(line)
+        req: dict[str, Any] = json.loads(line)
         resp = handle_mcp_request(req, repo_root)
         if resp is not None:
             sys.stdout.write(json.dumps(resp) + "\n")
