@@ -41,7 +41,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip build
           python -m build
-      - name: Install wheel in clean venv and smoke-test all 8 language profiles
+      - name: Install wheel in clean venv and smoke-test all 13 language profiles
         run: |
           python -m venv /tmp/smoke-venv
           /tmp/smoke-venv/bin/pip install dist/*.whl
