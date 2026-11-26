@@ -76,21 +76,13 @@ def _integrate_claude_code(repo_root: Path) -> IntegrationResult:
     hooks = settings.get("hooks")
     if not isinstance(hooks, dict):
         hooks = {}
-    stop_cmd = (
-        'python -c "import json,subprocess,sys; '
-        "r=subprocess.run(['donegate','status','--json'],capture_output=True,text=True); "
-        "d=json.loads(r.stdout) if r.returncode==0 and r.stdout.strip() else {}; "
-        "ids=[k for k,v in d.get('tasks',{}).items() if v.get('status')=='in_progress']; "
-        "codes=[subprocess.run(['donegate','check',i]).returncode for i in ids]; "
-        "sys.exit(max(codes, default=0))\""
-    )
     hooks["Stop"] = [
         {
             "matcher": "",
             "hooks": [
                 {
                     "type": "command",
-                    "command": stop_cmd,
+                    "command": "donegate check --all",
                 }
             ],
         }
@@ -135,14 +127,7 @@ def _integrate_git(repo_root: Path) -> IntegrationResult:
         f"# DoneGate pre-commit scope guard (tested against {_TESTED_VERSIONS['git']})\n"
         "set -e\n"
         "if [ -f done.yaml ]; then\n"
-        "  donegate status --json >/dev/null 2>&1 || true\n"
-        "  TASK_ID=$(donegate status --json | python -c "
-        "\"import json,sys; d=json.load(sys.stdin); "
-        "cur=[k for k,v in d.get('tasks',{}).items() if v.get('status')=='in_progress']; "
-        "print(cur[0] if cur else '')\")\n"
-        "  if [ -n \"$TASK_ID\" ]; then\n"
-        "    donegate check \"$TASK_ID\"\n"
-        "  fi\n"
+        "  donegate check --all\n"
         "fi\n"
     )
     atomic_write_text(hook_path, script)

@@ -5,6 +5,16 @@ All notable changes to DoneGate will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-11-26
+
+### Added
+- `donegate check --all` to verify all `in_progress` tasks in one command (used by `claude_code` and `git` hooks).
+- `donegate reset [task_id] [--all]` to reset failed/skipped tasks back to `pending`.
+- `donegate report` for cost, token, time, and pass/fail summaries from `state.json` and `events.log`.
+- `.donegate/lint_baseline.json` support in `no_new_lint_errors`.
+- `donegate_validate` and `donegate_report` MCP tools plus optional `mode` in `donegate_check`.
+- Auto-refresh polling and budget progress indicators in `donegate ui`.
+
 ## [0.1.0] - 2026-11-25
 
 ### Added

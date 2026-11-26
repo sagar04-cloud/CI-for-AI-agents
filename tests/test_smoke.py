@@ -4,4 +4,4 @@ from donegate import __version__
 
 
 def test_version_defined() -> None:
-    assert __version__ == "0.1.0"
+    assert __version__ == "1.1.0"

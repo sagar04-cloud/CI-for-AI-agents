@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from donegate import __version__
+from donegate.contract import ContractValidationError, ScopeMode, load_contract
 from donegate.supervisor import Supervisor
 
 _TOOLS = [
@@ -31,13 +32,26 @@ _TOOLS = [
         "description": "Run checks, scope guard, and budget checks on a task.",
         "inputSchema": {
             "type": "object",
-            "properties": {"task_id": {"type": "string"}},
+            "properties": {
+                "task_id": {"type": "string"},
+                "mode": {"type": "string", "enum": ["block", "warn", "revert-suggestion"]},
+            },
             "required": ["task_id"],
         },
     },
     {
         "name": "donegate_status",
         "description": "Return current DoneGate contract run state.",
+        "inputSchema": {"type": "object", "properties": {}, "required": []},
+    },
+    {
+        "name": "donegate_validate",
+        "description": "Validate done.yaml contract schema and dependency graph.",
+        "inputSchema": {"type": "object", "properties": {}, "required": []},
+    },
+    {
+        "name": "donegate_report",
+        "description": "Return cost, token usage, retries, and scope violation summary.",
         "inputSchema": {"type": "object", "properties": {}, "required": []},
     },
 ]
@@ -69,24 +83,35 @@ def handle_mcp_request(req: dict[str, Any], repo_root: Path) -> dict[str, Any] |
     if method == "tools/call":
         tool_name = params.get("name", "")
         args = params.get("arguments") or {}
-        sup = Supervisor(repo_root)
         payload: Any
-        if tool_name == "donegate_next":
-            payload = [t.model_dump(mode="json") for t in sup.next_tasks()]
-        elif tool_name == "donegate_start":
-            rt = sup.start(str(args["task_id"]))
-            payload = rt.model_dump(mode="json")
-        elif tool_name == "donegate_check":
-            outcome = sup.check(str(args["task_id"]))
-            payload = outcome.model_dump(mode="json")
-        elif tool_name == "donegate_status":
-            payload = sup.state.model_dump(mode="json")
+        if tool_name == "donegate_validate":
+            try:
+                c = load_contract(repo_root / "done.yaml")
+                payload = {"valid": True, "goal": c.goal, "tasks": len(c.tasks)}
+            except ContractValidationError as exc:
+                payload = {"valid": False, "errors": exc.errors}
         else:
-            return {
-                "jsonrpc": "2.0",
-                "id": req_id,
-                "error": {"code": -32601, "message": f"Unknown tool: {tool_name}"},
-            }
+            sup = Supervisor(repo_root)
+            if tool_name == "donegate_next":
+                payload = [t.model_dump(mode="json") for t in sup.next_tasks()]
+            elif tool_name == "donegate_start":
+                rt = sup.start(str(args["task_id"]))
+                payload = rt.model_dump(mode="json")
+            elif tool_name == "donegate_check":
+                raw_mode = args.get("mode")
+                mode = ScopeMode(raw_mode) if raw_mode else None
+                outcome = sup.check(str(args["task_id"]), scope_mode=mode)
+                payload = outcome.model_dump(mode="json")
+            elif tool_name == "donegate_status":
+                payload = sup.state.model_dump(mode="json")
+            elif tool_name == "donegate_report":
+                payload = sup.build_report()
+            else:
+                return {
+                    "jsonrpc": "2.0",
+                    "id": req_id,
+                    "error": {"code": -32601, "message": f"Unknown tool: {tool_name}"},
+                }
         return {
             "jsonrpc": "2.0",
             "id": req_id,

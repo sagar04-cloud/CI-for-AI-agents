@@ -385,13 +385,19 @@ class NoNewLintErrorsCheck:
                 message="no_new_lint_errors requires a 'command' field",
                 suggested_action="Provide the linter command.",
             )
-        baseline = int(
-            getattr(
-                spec,
-                "baseline_errors",
-                context.lint_baselines.get(spec.display_name(), 0),
-            )
-        )
+        baseline = getattr(spec, "baseline_errors", None)
+        if baseline is None:
+            baseline_file = context.repo_root / ".donegate" / "lint_baseline.json"
+            if baseline_file.is_file():
+                try:
+                    loaded = json.loads(baseline_file.read_text(encoding="utf-8"))
+                    if isinstance(loaded, dict) and spec.display_name() in loaded:
+                        baseline = int(loaded[spec.display_name()])
+                except (json.JSONDecodeError, ValueError, TypeError):
+                    baseline = None
+        if baseline is None:
+            baseline = context.lint_baselines.get(spec.display_name(), 0)
+        baseline = int(baseline)
         code, stdout, stderr, timed_out = _run_shell(cmd, context.repo_root, spec.timeout_seconds)
         if timed_out:
             return CheckResult(

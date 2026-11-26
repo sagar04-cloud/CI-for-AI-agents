@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -23,6 +24,7 @@ from donegate.supervisor.state import (
     TaskRuntimeState,
     append_event,
     load_state,
+    read_events,
     save_state,
     utc_now,
 )
@@ -352,3 +354,69 @@ class Supervisor:
             scope_result=scope_res,
             deadline_warning=deadline_warning,
         )
+
+    def reset_task(self, task_id: str | None = None) -> list[str]:
+        """Reset one task (or all tasks if task_id is None) back to pending."""
+        targets = [task_id] if task_id is not None else [t.id for t in self.contract.tasks]
+        for tid in targets:
+            self.contract.get_task(tid)
+            self.state.tasks[tid] = TaskRuntimeState(status=TaskStatus.PENDING)
+            append_event(
+                self.repo_root,
+                EventRecord(event="task_reset", task_id=tid, status=TaskStatus.PENDING.value),
+            )
+        save_state(self.repo_root, self.state)
+        return targets
+
+    def check_all_in_progress(self, scope_mode: ScopeMode | None = None) -> list[CheckOutcome]:
+        """Run check() on every task currently in_progress."""
+        outcomes: list[CheckOutcome] = []
+        for task in self.contract.tasks:
+            if self.state.tasks[task.id].status == TaskStatus.IN_PROGRESS:
+                outcomes.append(self.check(task.id, scope_mode=scope_mode))
+        return outcomes
+
+    def build_report(self) -> dict[str, Any]:
+        """Aggregate usage, cost, retries, and scope violations from state and events.log."""
+        events = read_events(self.repo_root)
+        scope_violations = 0
+        for ev in events:
+            if ev.event == "task_failed" and ev.details.get("scope_violations"):
+                scope_violations += len(ev.details["scope_violations"])
+
+        task_rows: list[dict[str, Any]] = []
+        total_steps = 0
+        total_tokens = 0
+        total_retries = 0
+        total_minutes = 0.0
+        done_count = 0
+        for task in self.contract.tasks:
+            rt = self.state.tasks[task.id]
+            total_steps += rt.usage.steps
+            total_tokens += rt.usage.tokens
+            total_retries += rt.usage.retries
+            total_minutes += rt.usage.minutes
+            if rt.status == TaskStatus.DONE:
+                done_count += 1
+            task_rows.append(
+                {
+                    "id": task.id,
+                    "status": rt.status.value,
+                    "steps": rt.usage.steps,
+                    "retries": rt.usage.retries,
+                    "tokens": rt.usage.tokens,
+                    "minutes": round(rt.usage.minutes, 3),
+                }
+            )
+        return {
+            "goal": self.contract.goal,
+            "total_tasks": len(self.contract.tasks),
+            "done_tasks": done_count,
+            "total_steps": total_steps,
+            "total_retries": total_retries,
+            "total_tokens": total_tokens,
+            "total_minutes": round(total_minutes, 3),
+            "scope_violations": scope_violations,
+            "events_count": len(events),
+            "tasks": task_rows,
+        }
