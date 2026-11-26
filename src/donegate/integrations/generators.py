@@ -6,6 +6,7 @@ import json
 import os
 import stat
 from pathlib import Path
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -66,7 +67,7 @@ def _integrate_claude_code(repo_root: Path) -> IntegrationResult:
         atomic_write_text(claude_md, snippet)
 
     settings_path = repo_root / ".claude" / "settings.json"
-    settings: dict[str, object] = {}
+    settings: dict[str, Any] = {}
     if settings_path.is_file():
         try:
             loaded = json.loads(settings_path.read_text(encoding="utf-8"))
@@ -75,9 +76,8 @@ def _integrate_claude_code(repo_root: Path) -> IntegrationResult:
         except json.JSONDecodeError:
             settings = {}
 
-    hooks = settings.get("hooks")
-    if not isinstance(hooks, dict):
-        hooks = {}
+    raw_hooks = settings.get("hooks")
+    hooks: dict[str, Any] = raw_hooks if isinstance(raw_hooks, dict) else {}
     hooks["Stop"] = [
         {
             "matcher": "",

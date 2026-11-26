@@ -7,7 +7,13 @@
   },
   "repository": "https://github.com/sagar04-cloud/CI-for-AI-agents",
   "license": "MIT",
-  "keywords": ["ai-agents", "ci", "guardrails", "testing", "scope-guard"],
+  "keywords": [
+    "ai-agents",
+    "ci",
+    "guardrails",
+    "testing",
+    "scope-guard"
+  ],
   "skills": [
     "./skills/donegate"
   ],
