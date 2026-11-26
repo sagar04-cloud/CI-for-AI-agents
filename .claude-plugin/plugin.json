@@ -17,9 +17,8 @@
       "args": [
         "--from",
         "git+https://github.com/sagar04-cloud/CI-for-AI-agents.git",
-        "python",
-        "-m",
-        "donegate.integrations.mcp_server",
+        "donegate",
+        "mcp",
         "--repo",
         "."
       ]

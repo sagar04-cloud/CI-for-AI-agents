@@ -70,18 +70,41 @@ def render_dashboard_html(repo_root: Path) -> str:
         <th>Retries</th><th>Tokens</th><th>Summary</th>
       </tr>
     </thead>
-    <tbody>
+    <tbody id="tasks-body">
       {"".join(rows) or "<tr><td colspan='6'>No tasks recorded yet.</td></tr>"}
     </tbody>
   </table>
   <h2>Recent Events</h2>
   <ul id="events">{"".join(event_items) or "<li>No events logged yet.</li>"}</ul>
   <script>
+    const esc = (s) => String(s ?? '').replace(/[&<>"]/g, c => (
+      {{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}}[c]
+    ));
     setInterval(async () => {{
       try {{
-        const s = await fetch('/api/state').then(r => r.json());
+        const [s, evs] = await Promise.all([
+          fetch('/api/state').then(r => r.json()),
+          fetch('/api/events').then(r => r.json()),
+        ]);
         if (s && s.tasks) {{
-          document.title = 'DoneGate (' + Object.keys(s.tasks).length + ' tasks)';
+          const entries = Object.entries(s.tasks);
+          document.title = 'DoneGate (' + entries.length + ' tasks)';
+          const tbody = document.getElementById('tasks-body');
+          tbody.innerHTML = entries.map(([id, rt]) => {{
+            const st = esc(rt.status);
+            const u = rt.usage || {{}};
+            return `<tr><td><code>${{esc(id)}}</code></td>`
+              + `<td><span class="badge badge-${{st}}">${{st}}</span></td>`
+              + `<td>${{u.steps ?? 0}}</td><td>${{u.retries ?? 0}}</td>`
+              + `<td>${{u.tokens ?? 0}}</td><td>${{esc(rt.last_summary || '-')}}</td></tr>`;
+          }}).join('') || "<tr><td colspan='6'>No tasks recorded yet.</td></tr>";
+        }}
+        if (Array.isArray(evs)) {{
+          const ul = document.getElementById('events');
+          ul.innerHTML = evs.slice(-50).reverse().map(ev =>
+            `<li><code>${{esc(ev.timestamp)}}</code> <strong>${{esc(ev.event)}}</strong>`
+            + ` (${{esc(ev.task_id || '-')}}) -&gt; ${{esc(ev.status || '-')}}</li>`
+          ).join('') || '<li>No events logged yet.</li>';
         }}
       }} catch (_) {{}}
     }}, 3000);

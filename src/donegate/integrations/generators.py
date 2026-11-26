@@ -171,8 +171,8 @@ def _integrate_mcp(repo_root: Path) -> IntegrationResult:
         "x-donegate-tested-against": _TESTED_VERSIONS["mcp"],
         "mcpServers": {
             "donegate": {
-                "command": "python",
-                "args": ["-m", "donegate.integrations.mcp_server", "--repo", "."],
+                "command": "donegate",
+                "args": ["mcp", "--repo", "."],
             }
         },
     }

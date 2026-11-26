@@ -144,6 +144,8 @@ def test_agent_skill_and_plugin_manifests(tmp_path: Path) -> None:
 
     plugin_json = json.loads((root / ".claude-plugin" / "plugin.json").read_text(encoding="utf-8"))
     assert plugin_json["name"] == "donegate"
+    assert "mcp" in plugin_json["mcpServers"]["donegate"]["args"]
+    assert runner.invoke(app, ["mcp", "--help"]).exit_code == 0
     market_json = json.loads(
         (root / ".claude-plugin" / "marketplace.json").read_text(encoding="utf-8")
     )

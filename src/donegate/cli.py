@@ -21,7 +21,7 @@ from donegate.contract import (
     export_contract_schema,
     load_contract,
 )
-from donegate.integrations import SUPPORTED_INTEGRATIONS, apply_integration
+from donegate.integrations import SUPPORTED_INTEGRATIONS, apply_integration, run_mcp_stdio
 from donegate.planner import draft_contract
 from donegate.profiles import detect_profiles, generate_contract
 from donegate.supervisor import Supervisor, read_events
@@ -460,6 +460,14 @@ def _tool_install_hint(tool: str) -> str:
         if tool in hints:
             return f"Install '{tool}': {hints[tool]}"
     return f"Install '{tool}' and ensure it is on PATH."
+
+
+@app.command()
+def mcp(
+    repo: Annotated[Path, typer.Option("--repo", help="Repository root path")] = Path("."),
+) -> None:
+    """Run the DoneGate MCP JSON-RPC 2.0 server over stdio."""
+    run_mcp_stdio(repo.resolve())
 
 
 @app.command()
