@@ -58,7 +58,7 @@ version = { attr = "donegate.__version__" }
 where = ["src"]
 
 [tool.setuptools.package-data]
-donegate = ["profiles/data/*.yaml"]
+donegate = ["py.typed", "profiles/data/*.yaml"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

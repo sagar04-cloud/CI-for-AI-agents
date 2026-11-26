@@ -22,6 +22,7 @@ SUPPORTED_INTEGRATIONS = (
     "openhands",
     "windsurf",
     "continue",
+    "skill",
 )
 
 _TESTED_VERSIONS = {
@@ -34,6 +35,7 @@ _TESTED_VERSIONS = {
     "openhands": "OpenHands >=0.14 (.openhands/microagents)",
     "windsurf": "Windsurf >=1.0 (.windsurfrules)",
     "continue": "Continue.dev >=1.0 (.continue/rules)",
+    "skill": "Agent Skills Spec (.agents/skills/donegate/SKILL.md)",
 }
 
 
@@ -261,6 +263,28 @@ def _integrate_continue(repo_root: Path) -> IntegrationResult:
     )
 
 
+def _integrate_skill(repo_root: Path) -> IntegrationResult:
+    skill_path = repo_root / ".agents" / "skills" / "donegate" / "SKILL.md"
+    content = (
+        "---\n"
+        "name: donegate\n"
+        "description: Enforce DoneGate contracts (done.yaml), git scope guards, "
+        "and objective checks before claiming a task is done.\n"
+        "---\n\n"
+        f"# DoneGate Skill ({_TESTED_VERSIONS['skill']})\n\n"
+        "1. Run `donegate next --json` and `donegate start <task-id>`.\n"
+        "2. Edit only files matching `scope.allow`.\n"
+        "3. Run `donegate check <task-id> --json` and fix any failure before stopping.\n"
+    )
+    atomic_write_text(skill_path, content)
+    return IntegrationResult(
+        name="skill",
+        tested_against=_TESTED_VERSIONS["skill"],
+        files_written=[".agents/skills/donegate/SKILL.md"],
+        notes="Installed portable Agent Skill SKILL.md into .agents/skills/donegate/.",
+    )
+
+
 def apply_integration(repo_root: Path, name: str) -> IntegrationResult:
     """Generate integration files for the requested tool."""
     handlers = {
@@ -273,6 +297,7 @@ def apply_integration(repo_root: Path, name: str) -> IntegrationResult:
         "openhands": _integrate_openhands,
         "windsurf": _integrate_windsurf,
         "continue": _integrate_continue,
+        "skill": _integrate_skill,
     }
     key = name.lower()
     if key in handlers:

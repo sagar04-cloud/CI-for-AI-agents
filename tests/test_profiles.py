@@ -71,3 +71,15 @@ test_parser: pytest
     assert profiles["python"].default_test_command == "pytest -n auto"
     contract = generate_contract(tmp_path)
     assert contract.tasks[0].checks[0].command == "pytest -n auto"
+
+
+def test_repo_profiles_and_package_data_in_sync() -> None:
+    root = Path(__file__).resolve().parents[1]
+    repo_profiles = {
+        p.name: p.read_text(encoding="utf-8") for p in (root / "profiles").glob("*.yaml")
+    }
+    pkg_profiles = {
+        p.name: p.read_text(encoding="utf-8")
+        for p in (root / "src" / "donegate" / "profiles" / "data").glob("*.yaml")
+    }
+    assert repo_profiles == pkg_profiles

@@ -1,0 +1,28 @@
+{
+  "name": "donegate",
+  "version": "1.1.0",
+  "description": "CI for AI agents: executable contracts, git scope guards, budgets, and language-agnostic checks.",
+  "author": {
+    "name": "sagar04-cloud"
+  },
+  "repository": "https://github.com/sagar04-cloud/CI-for-AI-agents",
+  "license": "MIT",
+  "keywords": ["ai-agents", "ci", "guardrails", "testing", "scope-guard"],
+  "skills": [
+    "./skills/donegate"
+  ],
+  "mcpServers": {
+    "donegate": {
+      "command": "uvx",
+      "args": [
+        "--from",
+        "git+https://github.com/sagar04-cloud/CI-for-AI-agents.git",
+        "python",
+        "-m",
+        "donegate.integrations.mcp_server",
+        "--repo",
+        "."
+      ]
+    }
+  }
+}

@@ -1,0 +1,15 @@
+version: "1"
+goal: "Build C++ target and pass CTest"
+language_profile: cpp
+tasks:
+  - id: cpp-task
+    title: "Implement fix and run ctest"
+    scope:
+      allow: ["src/**/*.{c,cc,cpp,h,hpp}", "tests/**/*.{c,cc,cpp}"]
+    budget:
+      steps: 12
+      minutes: 20
+    checks:
+      - type: test_suite
+        command: "ctest --output-on-failure"
+        parser: generic

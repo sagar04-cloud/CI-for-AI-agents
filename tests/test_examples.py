@@ -10,7 +10,22 @@ EXAMPLES_DIR = Path(__file__).resolve().parents[1] / "examples"
 
 
 def test_all_language_examples_are_valid_contracts() -> None:
-    expected = {"python", "node", "go", "rust", "java", "dotnet", "ruby", "php"}
+    expected = {
+        "python",
+        "python-junitxml",
+        "node",
+        "go",
+        "rust",
+        "java",
+        "dotnet",
+        "ruby",
+        "php",
+        "elixir",
+        "scala",
+        "swift",
+        "zig",
+        "cpp",
+    }
     found = {p.parent.name for p in EXAMPLES_DIR.glob("*/done.yaml")}
     assert expected.issubset(found)
 

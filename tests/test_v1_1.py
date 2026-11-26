@@ -132,3 +132,22 @@ tasks:
     )
     assert bad_val is not None
     assert json.loads(bad_val["result"]["content"][0]["text"])["valid"] is False
+
+
+def test_agent_skill_and_plugin_manifests(tmp_path: Path) -> None:
+    from donegate.integrations import apply_integration
+
+    root = Path(__file__).resolve().parents[1]
+    for skill_file in (root / "SKILL.md", root / "skills" / "donegate" / "SKILL.md"):
+        text = skill_file.read_text(encoding="utf-8")
+        assert text.startswith("---\nname: donegate\n")
+
+    plugin_json = json.loads((root / ".claude-plugin" / "plugin.json").read_text(encoding="utf-8"))
+    assert plugin_json["name"] == "donegate"
+    market_json = json.loads(
+        (root / ".claude-plugin" / "marketplace.json").read_text(encoding="utf-8")
+    )
+    assert market_json["plugins"][0]["name"] == "donegate"
+
+    res = apply_integration(tmp_path, "skill")
+    assert (tmp_path / res.files_written[0]).is_file()

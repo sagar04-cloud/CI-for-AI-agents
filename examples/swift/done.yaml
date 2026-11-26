@@ -1,0 +1,17 @@
+version: "1"
+goal: "Fix SwiftPM package and pass swift test"
+language_profile: swift
+tasks:
+  - id: swift-task
+    title: "Implement fix and run swift test"
+    scope:
+      allow: ["Sources/**/*.swift", "Tests/**/*.swift"]
+    budget:
+      steps: 10
+      minutes: 15
+    checks:
+      - type: test_suite
+        command: "swift test"
+        parser: generic
+      - type: lint_clean
+        command: "swiftlint"

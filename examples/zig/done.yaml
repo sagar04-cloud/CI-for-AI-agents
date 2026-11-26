@@ -1,0 +1,17 @@
+version: "1"
+goal: "Fix Zig module and pass zig build test"
+language_profile: zig
+tasks:
+  - id: zig-task
+    title: "Implement fix and run zig build test"
+    scope:
+      allow: ["src/**/*.zig", "tests/**/*.zig"]
+    budget:
+      steps: 10
+      minutes: 15
+    checks:
+      - type: test_suite
+        command: "zig build test"
+        parser: generic
+      - type: lint_clean
+        command: "zig fmt --check ."

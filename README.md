@@ -9,6 +9,22 @@
 
 ---
 
+## Use as an Agent Skill (Just Paste Repo Link)
+
+Add this repository directly to your AI coding agent as a Skill / Plugin:
+
+```bash
+# Universal Agent Skills CLI (Claude Code, Cursor, Codex, Windsurf, Gemini CLI, Antigravity):
+npx skills add sagar04-cloud/CI-for-AI-agents
+
+# Or run DoneGate directly from GitHub without installing globally:
+uvx --from git+https://github.com/sagar04-cloud/CI-for-AI-agents.git donegate init
+```
+
+This repository ships [`SKILL.md`](SKILL.md), [`skills/donegate/SKILL.md`](skills/donegate/SKILL.md), and [`.claude-plugin/plugin.json`](.claude-plugin/plugin.json) so agents can discover and run DoneGate automatically.
+
+---
+
 ## Before & After
 
 | Without DoneGate | With DoneGate |
@@ -98,6 +114,11 @@ DoneGate is written in Python, but guards repositories in **any** language that 
 | C# / .NET | `dotnet` | `*.csproj`, `*.sln` | `junit_xml` | [`examples/dotnet/done.yaml`](examples/dotnet/done.yaml) |
 | Ruby | `ruby` | `Gemfile` | `generic` | [`examples/ruby/done.yaml`](examples/ruby/done.yaml) |
 | PHP | `php` | `composer.json` | `junit_xml` | [`examples/php/done.yaml`](examples/php/done.yaml) |
+| Elixir | `elixir` | `mix.exs` | `generic` | [`examples/elixir/done.yaml`](examples/elixir/done.yaml) |
+| Scala | `scala` | `build.sbt` | `junit_xml` | [`examples/scala/done.yaml`](examples/scala/done.yaml) |
+| Swift | `swift` | `Package.swift` | `generic` | [`examples/swift/done.yaml`](examples/swift/done.yaml) |
+| Zig | `zig` | `build.zig` | `generic` | [`examples/zig/done.yaml`](examples/zig/done.yaml) |
+| C / C++ | `cpp` | `CMakeLists.txt` | `generic` | [`examples/cpp/done.yaml`](examples/cpp/done.yaml) |
 
 Monorepos and polyglot repositories are auto-detected per subdirectory.
 
@@ -109,11 +130,16 @@ Monorepos and polyglot repositories are auto-detected per subdirectory.
 - **Custom Plugins**: Publish third-party checks or test parsers via Python `entry_points` (`donegate.checks` and `donegate.parsers`).
 - **Custom Profiles**: Drop `<name>.yaml` into `.donegate/profiles/` in any repo to override or add a language profile.
 - **Agent Integrations** (`donegate integrate <name>`):
-  - `claude_code`: `CLAUDE.md` snippet + `.claude/settings.json` Stop hook
+  - `claude_code`: `CLAUDE.md` snippet + `.claude/settings.json` blocking `Stop` hook (`donegate check --all`)
   - `cursor`: `.cursor/rules/donegate.mdc`
   - `git`: `.git/hooks/pre-commit`
   - `generic`: `DONEGATE_PROMPT.md`
-  - `mcp`: `.mcp.json` + zero-dependency stdio MCP server (`donegate_next`, `donegate_start`, `donegate_check`, `donegate_status`)
+  - `mcp`: `.mcp.json` + zero-dependency stdio MCP server (`next`, `start`, `check`, `status`, `validate`, `report`)
+  - `aider`, `openhands`, `windsurf`, `continue`: repo rules and microagent configs
+- **Planner, Dashboard & Telemetry**:
+  - `donegate plan "<goal>"`: draft a multi-task `done.yaml` from a goal
+  - `donegate ui`: live local dashboard reading `.donegate/state.json` and `.donegate/events.log`
+  - `donegate report` / `donegate reset [id] [--all]` / `donegate export --otel`
 
 ---
 

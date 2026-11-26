@@ -58,6 +58,11 @@ jobs:
               "dotnet": "App.csproj",
               "ruby": "Gemfile",
               "php": "composer.json",
+              "elixir": "mix.exs",
+              "scala": "build.sbt",
+              "swift": "Package.swift",
+              "zig": "build.zig",
+              "cpp": "CMakeLists.txt",
           }
           dg = "/tmp/smoke-venv/bin/donegate"
           for lang, marker in markers.items():

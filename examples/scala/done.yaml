@@ -1,0 +1,16 @@
+version: "1"
+goal: "Fix Scala service and verify sbt test"
+language_profile: scala
+tasks:
+  - id: scala-task
+    title: "Implement fix and run sbt test"
+    scope:
+      allow: ["src/main/scala/**/*.scala", "src/test/scala/**/*.scala"]
+    budget:
+      steps: 12
+      minutes: 20
+    checks:
+      - type: test_suite
+        command: "sbt test"
+        parser: junit_xml
+        report_file: "target/test-reports/TEST-AppSpec.xml"

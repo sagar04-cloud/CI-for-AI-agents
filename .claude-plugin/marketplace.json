@@ -1,0 +1,14 @@
+{
+  "name": "donegate-marketplace",
+  "owner": {
+    "name": "sagar04-cloud"
+  },
+  "plugins": [
+    {
+      "name": "donegate",
+      "source": "./",
+      "description": "CI for AI agents: executable contracts, scope guards, budgets, and checks.",
+      "version": "1.1.0"
+    }
+  ]
+}
