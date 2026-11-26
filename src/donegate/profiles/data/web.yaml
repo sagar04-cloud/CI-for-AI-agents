@@ -1,0 +1,23 @@
+name: web
+display_name: Static Web (HTML / CSS / JS)
+detection_files:
+  - index.html
+default_test_command: python -c "from pathlib import Path; assert Path('index.html').is_file()"
+test_parser: generic
+lint_command: null
+build_command: null
+typecheck_command: null
+default_scope:
+  source:
+    - "*.html"
+    - "**/*.html"
+    - "**/*.css"
+    - "**/*.js"
+    - "assets/**/*"
+  tests:
+    - "tests/**/*"
+  ignore:
+    - "node_modules/**"
+    - "dist/**"
+lockfiles: []
+tool_binaries: []

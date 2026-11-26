@@ -226,6 +226,52 @@ def check(
 
 
 @app.command()
+def verify(
+    goal: str = typer.Option(
+        "Complete task safely within DoneGate contract", "--goal", "-g", help="Contract goal"
+    ),
+    file: ContractFileOpt = Path("done.yaml"),
+    mode: Annotated[
+        ScopeMode | None, typer.Option("--mode", help="Override scope guard mode")
+    ] = None,
+    json_output: JsonOpt = False,
+) -> None:
+    """One-command gate: auto-init done.yaml if missing, start runnable task, and check."""
+    repo_root = Path.cwd()
+    target = file if file.is_absolute() else (repo_root / file)
+    if not target.exists():
+        contract = generate_contract(repo_root, goal=goal)
+        dump_contract(contract, target)
+
+    sup = Supervisor(repo_root, file)
+    in_prog = [t for t in sup.contract.tasks if sup.state.tasks[t.id].status.value == "in_progress"]
+    if not in_prog:
+        runnable = sup.next_tasks()
+        if runnable:
+            sup.start(runnable[0].id)
+            in_prog = [runnable[0]]
+
+    outcomes = sup.check_all_in_progress(scope_mode=mode)
+    all_passed = bool(outcomes) and all(o.passed for o in outcomes)
+    if json_output:
+        _emit_json(
+            {
+                "passed": all_passed,
+                "checked": [o.model_dump(mode="json") for o in outcomes],
+            }
+        )
+    elif not outcomes:
+        console.print("[yellow]No active or runnable tasks to verify.[/yellow]")
+    else:
+        for o in outcomes:
+            color = "green" if o.passed else "red"
+            console.print(f"[{color}]{o.task_id}: {o.summary}[/{color}]")
+
+    if not all_passed:
+        raise typer.Exit(code=1)
+
+
+@app.command()
 def reset(
     task_id: str | None = typer.Argument(None, help="Task ID to reset (omit with --all)"),
     all_tasks: bool = typer.Option(False, "--all", help="Reset all tasks to pending"),
