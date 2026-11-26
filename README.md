@@ -131,4 +131,4 @@ Run offline with `python -m bench.run --agent mock` across 12 tasks in 4 languag
 - DoneGate's scope guard relies on `git` working-tree diffs; repositories without `git` cannot enforce scope diffs.
 - `done.yaml` executes shell commands (`command`, `test_suite`, `lint_clean`) — only run contracts from trusted repositories.
 
-See [`docs/demo.md`](docs/demo.md) for a 20-second terminal demo script.
+See [`docs/demo.md`](docs/demo.md) for a 20-second terminal demo script and [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the full internal architecture and execution flow.

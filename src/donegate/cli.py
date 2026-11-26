@@ -165,7 +165,8 @@ def start(
 
 @app.command()
 def check(
-    task_id: str = typer.Argument(..., help="Task ID to check"),
+    task_id: str | None = typer.Argument(None, help="Task ID to check (omit when using --all)"),
+    all_active: bool = typer.Option(False, "--all", help="Check all in_progress tasks"),
     file: ContractFileOpt = Path("done.yaml"),
     mode: Annotated[
         ScopeMode | None, typer.Option("--mode", help="Override scope guard mode")
@@ -175,6 +176,34 @@ def check(
 ) -> None:
     """Run checks, scope guard, and budget enforcement for a task."""
     sup = Supervisor(Path.cwd(), file)
+    if all_active:
+        outcomes = sup.check_all_in_progress(scope_mode=mode)
+        all_passed = all(o.passed for o in outcomes)
+        if json_output:
+            _emit_json(
+                {
+                    "passed": all_passed,
+                    "checked": [o.model_dump(mode="json") for o in outcomes],
+                }
+            )
+        elif not outcomes:
+            console.print("No in_progress tasks to check.")
+        else:
+            for o in outcomes:
+                color = "green" if o.passed else "red"
+                console.print(f"[{color}]{o.task_id}: {o.summary}[/{color}]")
+        if not all_passed:
+            raise typer.Exit(code=1)
+        return
+
+    if not task_id:
+        msg = "Provide a task_id or pass --all."
+        if json_output:
+            _emit_json({"ok": False, "error": msg})
+        else:
+            console.print(f"[red]Error:[/red] {msg}")
+        raise typer.Exit(code=1)
+
     try:
         outcome = sup.check(task_id, scope_mode=mode, approve=approve)
     except KeyError as exc:
@@ -194,6 +223,73 @@ def check(
 
     if not outcome.passed:
         raise typer.Exit(code=1)
+
+
+@app.command()
+def reset(
+    task_id: str | None = typer.Argument(None, help="Task ID to reset (omit with --all)"),
+    all_tasks: bool = typer.Option(False, "--all", help="Reset all tasks to pending"),
+    file: ContractFileOpt = Path("done.yaml"),
+    json_output: JsonOpt = False,
+) -> None:
+    """Reset one or all tasks back to pending."""
+    if not task_id and not all_tasks:
+        msg = "Provide a task_id or pass --all."
+        if json_output:
+            _emit_json({"ok": False, "error": msg})
+        else:
+            console.print(f"[red]Error:[/red] {msg}")
+        raise typer.Exit(code=1)
+
+    sup = Supervisor(Path.cwd(), file)
+    try:
+        reset_ids = sup.reset_task(None if all_tasks else task_id)
+    except KeyError as exc:
+        if json_output:
+            _emit_json({"ok": False, "error": str(exc)})
+        else:
+            console.print(f"[red]Error:[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+
+    if json_output:
+        _emit_json({"ok": True, "reset": reset_ids})
+    else:
+        console.print(f"[green]Reset[/green] task(s): {', '.join(reset_ids)}")
+
+
+@app.command()
+def report(
+    file: ContractFileOpt = Path("done.yaml"),
+    json_output: JsonOpt = False,
+) -> None:
+    """Summarize cost, token usage, retries, and scope violations."""
+    sup = Supervisor(Path.cwd(), file)
+    summary = sup.build_report()
+    if json_output:
+        _emit_json(summary)
+        return
+
+    table = Table(title=f"DoneGate Report ({summary['done_tasks']}/{summary['total_tasks']} done)")
+    table.add_column("Task ID", style="cyan")
+    table.add_column("Status")
+    table.add_column("Steps", justify="right")
+    table.add_column("Retries", justify="right")
+    table.add_column("Tokens", justify="right")
+    table.add_column("Minutes", justify="right")
+    for row in summary["tasks"]:
+        table.add_row(
+            row["id"],
+            row["status"],
+            str(row["steps"]),
+            str(row["retries"]),
+            str(row["tokens"]),
+            str(row["minutes"]),
+        )
+    console.print(table)
+    console.print(
+        f"Totals: steps={summary['total_steps']}, tokens={summary['total_tokens']}, "
+        f"scope_violations={summary['scope_violations']}, events={summary['events_count']}"
+    )
 
 
 @app.command("report-usage")

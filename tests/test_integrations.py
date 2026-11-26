@@ -48,7 +48,14 @@ tasks:
     list_resp = handle_mcp_request({"jsonrpc": "2.0", "id": 2, "method": "tools/list"}, tmp_path)
     assert list_resp is not None
     tool_names = {t["name"] for t in list_resp["result"]["tools"]}
-    assert tool_names == {"donegate_next", "donegate_start", "donegate_check", "donegate_status"}
+    assert {
+        "donegate_next",
+        "donegate_start",
+        "donegate_check",
+        "donegate_status",
+        "donegate_validate",
+        "donegate_report",
+    }.issubset(tool_names)
 
     check_resp = handle_mcp_request(
         {

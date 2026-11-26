@@ -75,7 +75,17 @@ def render_dashboard_html(repo_root: Path) -> str:
     </tbody>
   </table>
   <h2>Recent Events</h2>
-  <ul>{"".join(event_items) or "<li>No events logged yet.</li>"}</ul>
+  <ul id="events">{"".join(event_items) or "<li>No events logged yet.</li>"}</ul>
+  <script>
+    setInterval(async () => {{
+      try {{
+        const s = await fetch('/api/state').then(r => r.json());
+        if (s && s.tasks) {{
+          document.title = 'DoneGate (' + Object.keys(s.tasks).length + ' tasks)';
+        }}
+      }} catch (_) {{}}
+    }}, 3000);
+  </script>
 </body>
 </html>
 """
