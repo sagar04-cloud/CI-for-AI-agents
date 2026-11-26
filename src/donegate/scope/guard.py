@@ -26,11 +26,13 @@ DEFAULT_LOCKFILES = {
     "Gemfile.lock",
     "packages.lock.json",
     "gradle.lockfile",
+    "skills-lock.json",
 }
 
 ALWAYS_IGNORED_GLOBS = [
     ".donegate/**",
     ".git/**",
+    ".agents/**",
     "**/__pycache__/**",
     "**/*.pyc",
 ]
