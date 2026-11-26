@@ -38,6 +38,9 @@ def test_in_scope_and_ignored_lockfile(tmp_path: Path) -> None:
 
     (repo / "src" / "app.py").write_text("print('updated')\n", encoding="utf-8")
     (repo / "package-lock.json").write_text("{}\n", encoding="utf-8")
+    (repo / "skills-lock.json").write_text("{}\n", encoding="utf-8")
+    (repo / ".agents" / "skills" / "donegate").mkdir(parents=True)
+    (repo / ".agents" / "skills" / "donegate" / "SKILL.md").write_text("x\n", encoding="utf-8")
     (repo / "node_modules").mkdir()
     (repo / "node_modules" / "pkg.js").write_text("x\n", encoding="utf-8")
 
@@ -45,6 +48,8 @@ def test_in_scope_and_ignored_lockfile(tmp_path: Path) -> None:
     res = check_scope(repo, scope, mode=ScopeMode.BLOCK, baseline=baseline)
     assert res.passed is True
     assert "package-lock.json" in res.ignored_files
+    assert "skills-lock.json" in res.ignored_files
+    assert ".agents/skills/donegate/SKILL.md" in res.ignored_files
     assert "node_modules/pkg.js" in res.ignored_files
 
 
