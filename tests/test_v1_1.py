@@ -204,3 +204,21 @@ tasks:
         tmp_path,
     )
     assert unk is not None and unk["error"]["code"] == -32601
+
+
+def test_one_command_verify_web_project(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _git(tmp_path, "init")
+    _git(tmp_path, "config", "user.email", "t@e.com")
+    _git(tmp_path, "config", "user.name", "T")
+    (tmp_path / "index.html").write_text("<h1>College</h1>\n", encoding="utf-8")
+    _git(tmp_path, "add", ".")
+    _git(tmp_path, "commit", "-m", "init")
+
+    monkeypatch.chdir(tmp_path)
+    res = runner.invoke(app, ["verify", "--goal", "Build college site", "--json"])
+    assert res.exit_code == 0
+    payload = json.loads(res.stdout)
+    assert payload["passed"] is True
+    assert (tmp_path / "done.yaml").is_file()

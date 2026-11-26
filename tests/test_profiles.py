@@ -20,6 +20,7 @@ from donegate.profiles import detect_profiles, generate_contract, load_all_profi
         ("dotnet", "App.csproj", "junit_xml"),
         ("ruby", "Gemfile", "generic"),
         ("php", "composer.json", "junit_xml"),
+        ("web", "index.html", "generic"),
     ],
 )
 def test_detect_each_language_profile(
