@@ -95,11 +95,10 @@ def test_http_check(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         def __exit__(self, *_args: Any) -> None:
             return None
 
-    monkeypatch.setattr(
-        urllib.request,
-        "urlopen",
-        lambda req, timeout=120: _FakeResp(200, b"healthy"),
-    )
+    def _fake_urlopen(req: object, timeout: int = 120) -> _FakeResp:
+        return _FakeResp(200, b"healthy")
+
+    monkeypatch.setattr(urllib.request, "urlopen", _fake_urlopen)
     reg = get_check_registry()
     ctx = CheckContext(repo_root=tmp_path)
     res = reg.get("http_check").run(
