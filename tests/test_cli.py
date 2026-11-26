@@ -54,7 +54,7 @@ tasks:
       allow: ["src/**/*.py", "tests/**/*.py"]
     checks:
       - type: test_suite
-        command: '"{py}" -m pytest'
+        command: '"{py}" -B -m pytest'
         parser: pytest
 """,
         encoding="utf-8",
